@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ebola Outbreak Tracker | Live Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #f3f4f6; }
+        .blinking-dot {
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="text-gray-800 font-sans p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-8 bg-white p-6 rounded-lg shadow-sm border-t-4 border-red-600">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Ebola Outbreak Tracker</h1>
+                <p class="text-sm text-gray-500 mt-1">Global Monitoring Dashboard</p>
+            </div>
+            <div class="flex items-center space-x-2 bg-red-100 px-4 py-2 rounded-full">
+                <div class="w-3 h-3 bg-red-600 rounded-full blinking-dot"></div>
+                <span class="text-red-700 font-semibold text-sm">LIVE UPDATES</span>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-yellow-500">
+                <h2 class="text-lg font-semibold text-gray-600">Total Confirmed Cases</h2>
+                <p class="text-4xl font-bold text-gray-900 mt-2" id="total-cases">--</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-red-600">
+                <h2 class="text-lg font-semibold text-gray-600">Total Deaths</h2>
+                <p class="text-4xl font-bold text-gray-900 mt-2" id="total-deaths">--</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
+                <h2 class="text-lg font-semibold text-gray-600">Total Recoveries</h2>
+                <p class="text-4xl font-bold text-gray-900 mt-2" id="total-recoveries">--</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Outbreak Trend (Last 7 Days)</h2>
+                <canvas id="trendChart" height="200"></canvas>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Recent Regional Reports</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 text-sm uppercase">
+                                <th class="p-3 rounded-tl-lg">Region</th>
+                                <th class="p-3">New Cases</th>
+                                <th class="p-3 rounded-tr-lg">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="regional-table-body">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="mt-12 text-center text-sm text-gray-500">
+            <p>Data provided is for demonstration purposes. Ensure reliable public health APIs are connected for medical tracking.</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- 1. MOCK DATA (Replace this with a real API later) ---
+        // To use a real API or Google Sheets, you would use the fetch() function here.
+        const mockApiData = {
+            summary: {
+                cases: 12450,
+                deaths: 4802,
+                recoveries: 7105
+            },
+            trend: {
+                labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
+                data: [120, 150, 180, 170, 210, 250, 290]
+            },
+            regions: [
+                { name: 'Equateur Province', newCases: 45, date: '2026-05-19' },
+                { name: 'North Kivu', newCases: 12, date: '2026-05-18' },
+                { name: 'Ituri', newCases: 8, date: '2026-05-17' }
+            ]
+        };
+
+        // --- 2. UPDATE DASHBOARD FUNCTION ---
+        function updateDashboard() {
+            // Update Summary Cards
+            document.getElementById('total-cases').innerText = mockApiData.summary.cases.toLocaleString();
+            document.getElementById('total-deaths').innerText = mockApiData.summary.deaths.toLocaleString();
+            document.getElementById('total-recoveries').innerText = mockApiData.summary.recoveries.toLocaleString();
+
+            // Populate Regional Table
+            const tableBody = document.getElementById('regional-table-body');
+            tableBody.innerHTML = ''; // Clear existing rows
+            
+            mockApiData.regions.forEach(region => {
+                const row = `
+                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="p-3 font-medium text-gray-800">${region.name}</td>
+                        <td class="p-3 text-red-600 font-bold">+${region.newCases}</td>
+                        <td class="p-3 text-gray-500 text-sm">${region.date}</td>
+                    </tr>
+                `;
+                tableBody.insertAdjacentHTML('beforeend', row);
+            });
+
+            // Initialize Chart
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: mockApiData.trend.labels,
+                    datasets: [{
+                        label: 'New Cases',
+                        data: mockApiData.trend.data,
+                        borderColor: '#dc2626', // Tailwind red-600
+                        backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3 // Smooth curves
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // --- 3. RUN ON LOAD ---
+        // This runs the function to fill the page with data when it loads.
+        // If using a real API, you would call fetch('API_URL').then(...) here.
+        window.onload = () => {
+            updateDashboard();
+        };
+    </script>
+</body>
+</html>
